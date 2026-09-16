@@ -19,12 +19,33 @@ jobs:
 
       - run: npm ci
 
-      # Strict types, then the suite. The tests do the real work here: they
-      # re-score every witness board the page can display and check it against
-      # the point it is filed under, so a data regression fails the build
-      # rather than showing up as a wrong dot months later.
+      # The tests re-score every example board the page can show against the
+      # dot it belongs to, so bad data fails here.
       - run: npm run typecheck
       - run: npm test
-
-      # The page is the deliverable, so a broken build should fail CI too.
       - run: npm run build
+
+      - name: Upload the built site
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  # Publishes to https://timteachesmath.github.io/zingo/ once the checks pass.
+  # Requires Settings → Pages → Source to be "GitHub Actions".
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

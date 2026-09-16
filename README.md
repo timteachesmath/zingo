@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/timteachesmath/zingo/actions/workflows/ci.yml/badge.svg)](https://github.com/timteachesmath/zingo/actions/workflows/ci.yml)
 
-<!-- TODO: add the live link once the page is deployed. -->
+**Live page: [timteachesmath.github.io/zingo](https://timteachesmath.github.io/zingo/)**
 
 ![The chart of every legal card set, with the retail green set open below it](docs/screenshot.png)
 
