@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+reference/nocommit
+.vscode/
+# Building inside a Google Drive folder? Keep node_modules out of Drive sync.

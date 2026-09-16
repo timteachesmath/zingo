@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Evaluating Zingo Fairness</title>
+  <!-- Shared site styles first, then this page's own layer on top. -->
+  <link rel="stylesheet" href="https://timteachesmath.github.io/site.css" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+
+<body>
+  <script src="https://timteachesmath.github.io/header.js" defer></script>
+
+  <main class="page">
+    <header>
+      <h1>Evaluating Zingo Fairness</h1>
+    </header>
+
+    <h2>Game Description</h2>
+    <p>The children's game Zingo by ThinkFun borrows from two other popular games.</p>
+    <h3>Bingo</h3>
+    <ul>
+      <li>Each card has 25 spaces: 24 numbers and a free center space. Each of the 5 columns draws from its own
+        range of 15 numbers.</li>
+      <li>That allows 552 septillion different cards: P(15,5)<sup>4</sup> &times; P(15,4).</li>
+      <li>Numbers are called one at a time, and every player holding a called number marks it. The first player to
+        complete a pattern, usually a line of five, wins.</li>
+    </ul>
+    <h3>Spot It</h3>
+    <ul>
+      <li>Each of the 55 cards shows 8 of 57 images, and every pair of cards shares exactly one image.</li>
+      <li>Players race to find the image that two cards have in common.</li>
+    </ul>
+    <h3>Zingo</h3>
+    <ul>
+      <li>72 tiles carry 24 images, three copies of each.</li>
+      <li>Each card shows 9 different images, which allows C(24,9) = 1,307,504 possible cards.</li>
+      <li>The game comes with six double-sided cards: a green set on one side and a red set on the other. Across
+        all pairs of cards, green shares 42 images and red shares 53.</li>
+      <li>Tiles are dealt two at a time, and each tile goes to the first player who claims it.</li>
+    </ul>
+
+    <h2>Game Evaluation</h2>
+    <p>Because only one player can claim each tile, Zingo is not the game of luck that bingo is. However, the provided card sets undermine rewarding players' speed.</p>
+    <p>The 2019 edition explains its two sides this way:</p>
+    <blockquote>
+      <p>&ldquo;Green side: This side is LESS competitive as cards have fewer images in common. This level is better
+        for younger players. Red Side: This side is MORE competitive. Red Cards share more images, so players must
+        act faster to claim the tiles. This level is better for older and more advanced players.&rdquo;</p>
+    </blockquote>
+    <!-- WebP with JPEG fallback. Width and height are set to avoid layout shift. -->
+    <div class="zg-photos">
+      <figure>
+        <picture>
+          <source srcset="photos/cards-green.webp" type="image/webp" />
+          <img src="photos/cards-green.jpg" width="1500" height="1226" loading="lazy" decoding="async"
+            alt="The six green Zingo cards laid out in two rows, each a 3 by 3 grid of named pictures." />
+        </picture>
+        <figcaption>The green set — the &ldquo;easy&rdquo; side.</figcaption>
+      </figure>
+      <figure>
+        <picture>
+          <source srcset="photos/cards-red.webp" type="image/webp" />
+          <img src="photos/cards-red.jpg" width="1500" height="1265" loading="lazy" decoding="async"
+            alt="The six red Zingo cards laid out in two rows, each a 3 by 3 grid of named pictures." />
+        </picture>
+        <figcaption>The red set — the other side of the same six cards.</figcaption>
+      </figure>
+      <figure>
+        <picture>
+          <source srcset="photos/tiles.webp" type="image/webp" />
+          <img src="photos/tiles.jpg" width="1500" height="844" loading="lazy" decoding="async"
+            alt="The Zingo tiles: twenty-four pictures, three copies of each, seventy-two tiles in total." />
+        </picture>
+        <figcaption>The tiles — 24 pictures, three copies each.</figcaption>
+      </figure>
+    </div>
+    <p>A closer look reveals two significant issues:</p>
+    <ul>
+      <li><strong>The green side is uneven.</strong> Cards 3 and 6 share five images, more than nearly all pairs
+        of red cards, while cards 5 and 6 share only one. In this three-player game, the player with card 6 has a significant advantage.</li>
+      <li><strong>On the red side, slower players have no chance of winning.</strong> Only three copies of each image exist, yet
+        five images (ball, cat, dog, star and sun) each appear on four red cards. In practice, players can be eliminated before any other player wins. In a six-player game, at least two
+        of the slowest players can never complete their cards. </li>
+    </ul>
+
+    <h2>Better Choices Are Available</h2>
+    <p>The graph below arranges possible card sets that use each picture at most three times, consistent with the 72-tile set. Each is placed according to two measures: how competitive it is and how unfair it is.
+      Fairness matters less in a set that isn't very competitive, because its cards share fewer images to fight
+      over.</p>
+    <p>The horizontal axis measures competitiveness as &mu;, the mean number of images shared by each of the
+      C(6,2) = 15 pairs of cards.</p>
+    <p>The vertical axis measures unfairness as &sigma;, the standard deviation of those 15 counts.</p>
+    <p>At lower left, 48 combinations are both less competitive and
+      fairer than the green set. At right, 8 are both more competitive fairer than the red set. </p>
+    <p class="zg-hint zg-plane-hint">
+      Point at a dot to see which mixes of single, double and triple tiles land there. Click to keep the bubble
+      open, then pick a mix to see an example six-card set. After clicking the chart, you can also move between
+      dots with the arrow keys.
+    </p>
+
+    <div class="zg-plane">
+      <svg id="plane" viewBox="0 0 1040 620" role="img"
+        aria-label="Every reachable card set, arranged by difficulty and unfairness. Point at a dot, or focus the plane and use the arrow keys, to see which kinds of sets land there."></svg>
+      <div id="tip" class="zg-tip" hidden></div>
+    </div>
+    <div id="cards" class="zg-cards" hidden></div>
+
+    <!-- Same shape as the colophon on the puzzle solver page: a one-line summary,
+         how the data is made, how the page is built, tags, and the source. -->
+    <section class="card colophon">
+      <h2>Technical Details</h2>
+      <p><i> Evaluates the board game Zingo by arranging legal six-card sets on a plane of difficulty versus
+          unfairness, showing where the two retail sets fall short. Points on the interactive SVG chart opens example sets and tests check each result against proven bounds.
+      </i></p>
+      <p>The card set generator works on how many tiles each pair of cards shares. A closed-form bound gives the fairest set possible at each of the 18 difficulty levels, and a constructed board meets that bound in every one, so the lower edge of the plane is exact. A seeded search fills in the rest by swapping tiles between cards without changing difficulty.</p>
+      <p>The plane is SVG in TypeScript. Rather than giving 1,713 dots their own targets, it finds the point nearest the pointer, so it works by mouse, touch, or arrow keys. Each sample board is stored in 24 characters, and the test suite re-scores every one against the point it is filed under; GitHub Actions runs the suite on every push.</p>
+      <div class="tags">TypeScript · Vitest · SVG · GitHub Actions</div>
+      <div class="card__links">
+        <a class="btn" href="https://github.com/timteachesmath/zingo">View Source</a>
+      </div>
+    </section>
+
+  </main>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>

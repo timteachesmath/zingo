@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Strict types, then the suite. The tests do the real work here: they
+      # re-score every witness board the page can display and check it against
+      # the point it is filed under, so a data regression fails the build
+      # rather than showing up as a wrong dot months later.
+      - run: npm run typecheck
+      - run: npm test
+
+      # The page is the deliverable, so a broken build should fail CI too.
+      - run: npm run build

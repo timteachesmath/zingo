@@ -1,0 +1,375 @@
+/* Styles for the Zingo page only. The palette, type, header and shared
+   components come from site.css, which index.html loads first. */
+
+:root {
+  /* Wider column for the chart. Set on the token, not .page, so the header
+     widens to match. */
+  --measure: 1080px;
+
+  --plane-bg: var(--surface);
+
+  /* The tile art has its own face and border, so a cell just matches the card. */
+  --tile-face: var(--bg);
+  --card-ink: var(--text-soft);
+
+  /* Ring colours for tiles on two, three and four cards. Two and three are
+     dimmed until highlighted (the `-lit` values). Four is an alarm colour
+     because it needs more than the three copies of each tile. */
+  --ring-two: #55487a;
+  --ring-two-lit: #a78bfa;
+  --ring-three: #2c6250;
+  --ring-three-lit: #34d399;
+  --ring-four: #f97316;
+}
+
+.page {
+  padding-top: 8px;
+}
+
+.lede {
+  font-size: 1.16rem;
+}
+
+/* ---- The photographs ------------------------------------------------- */
+
+/* Equal columns, three across on wide screens and stacking on narrow ones. */
+.zg-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 16px;
+  margin: 32px 0 8px;
+}
+
+.zg-photos figure {
+  margin: 0;
+}
+
+.zg-photos img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+
+.zg-photos figcaption {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+/* ---- The plane ------------------------------------------------------ */
+
+.zg-plane {
+  margin: 40px 0 8px;
+  background: var(--plane-bg);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.zg-plane svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* No double-tap zoom, so taps register immediately. Panning still works. */
+  touch-action: manipulation;
+}
+
+.zg-hint {
+  color: var(--muted);
+  margin: 0.3em 0 0;
+}
+
+/* ---- Pointing at the plane ------------------------------------------- */
+
+.zg-plane {
+  position: relative;
+}
+
+.zg-plane svg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The retail markers act as buttons. */
+.zg-plane [data-marker] { cursor: pointer; }
+
+.zg-plane [data-marker]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Shown under the red set, which prints some tiles on four cards. */
+.zg-cards-warning {
+  margin: 10px 0 0;
+  color: var(--ring-four);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.zg-plane-hint {
+  margin: 10px 2px 0;
+  font-size: 0.9rem;
+}
+
+/* Inside .zg-plane, so moving onto the bubble doesn't count as leaving the plane. */
+.zg-tip {
+  position: absolute;
+  z-index: 5;
+  min-width: 15rem;
+  max-width: 20rem;
+  transform: translate(-50%, -100%);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 10px 12px 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  font-size: 0.85rem;
+  pointer-events: auto;
+}
+
+.zg-tip-head {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.zg-tip-sub {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 2px 0 8px;
+}
+
+.zg-tip-comp {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+
+.zg-tip-comp:hover:not(:disabled) {
+  background: var(--border-strong);
+}
+
+/* A mix with no example set found. Styled as unavailable, not as impossible. */
+.zg-tip-comp:disabled {
+  background: none;
+  color: var(--dim);
+  border-style: dashed;
+  cursor: default;
+}
+
+.zg-tip-note {
+  color: var(--dim);
+  font-size: 0.72rem;
+  margin: 6px 0 0;
+}
+
+/* ---- The sample set -------------------------------------------------- */
+
+.zg-cards {
+  margin: 18px 0 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 18px 20px 20px;
+  background: var(--surface);
+}
+
+.zg-cards-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.zg-cards-title {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.zg-cards-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.zg-deck {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 12px;
+}
+
+/* This page's classes are prefixed `zg-` to avoid clashing with site.css,
+   which defines generic names like `.card` and `.card-grid`. */
+.zg-card {
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.zg-card-label {
+  color: var(--dim);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.zg-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+}
+
+.zg-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  border-radius: 4px;
+  padding: 3px 2px 4px;
+  text-align: center;
+  font-size: 0.6rem;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  background: var(--tile-face);
+  color: var(--card-ink);
+  /* Always reserve the ring's width so the grid doesn't shift. */
+  border: 3px solid transparent;
+}
+
+.zg-cell-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 2rem;
+}
+
+.zg-cell-name { display: block; }
+
+/* The ring shows how many cards carry the tile. */
+.zg-cell[data-spread="1"] { border-color: transparent; }
+
+.zg-cell[data-spread="2"] { border-style: dashed; border-color: var(--ring-two); }
+
+/* A border can't be crosshatched, so paint it: the face fills the padding box
+   and two diagonal stripe gradients fill the border box behind it. */
+.zg-cell[data-spread="3"] {
+  background-image:
+    linear-gradient(var(--tile-face), var(--tile-face)),
+    repeating-linear-gradient(45deg, var(--ring-three) 0 1.5px, transparent 1.5px 5px),
+    repeating-linear-gradient(-45deg, var(--ring-three) 0 1.5px, transparent 1.5px 5px);
+  background-clip: padding-box, border-box, border-box;
+  background-origin: padding-box, border-box, border-box;
+  background-repeat: no-repeat, repeat, repeat;
+}
+
+.zg-cell[data-spread="3"] .zg-cell-name { font-weight: 700; }
+
+/* Four cards is impossible with three copies per tile, so this only appears on
+   the retail red set. */
+.zg-cell[data-spread="4"] {
+  border-style: solid;
+  border-color: var(--ring-four);
+  box-shadow: 0 0 0 1px var(--ring-four);
+}
+
+.zg-cell[data-spread="4"] .zg-cell-name { font-weight: 700; color: var(--ring-four); }
+
+.zg-cards-legend {
+  margin: 12px 0 0;
+  color: var(--dim);
+  font-size: 0.75rem;
+}
+
+.zg-cards-legend b { color: var(--text-soft); font-weight: 600; }
+
+/* An unpinned bubble lets the pointer pass through to the dots beneath it. */
+.zg-tip { pointer-events: none; }
+.zg-tip.zg-is-pinned { pointer-events: auto; border-color: var(--accent); }
+
+.zg-tip-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.zg-tip-close:hover { color: var(--text); background: none; }
+
+/* Below the dot when there's no room above. */
+.zg-tip--below { transform: translate(-50%, 0); }
+
+.zg-cards-legend .zg-chip {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  vertical-align: baseline;
+}
+
+/* ---- Highlights ------------------------------------------------------- */
+.zg-cards-legend .zg-chip,
+.zg-cards-worst {
+  cursor: pointer;
+  user-select: none;
+}
+
+.zg-cards-worst {
+  border-bottom: 1px dashed var(--border-strong);
+}
+
+/* The hotkey badge appears on hover. `visibility` keeps its space reserved so
+   the label doesn't shift. */
+.zg-chip-key,
+.zg-cards-worst .zg-chip-key {
+  visibility: hidden;
+  display: inline-block;
+  min-width: 1em;
+  text-align: center;
+  margin-left: 5px;
+  padding: 0 3px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 0.85em;
+  opacity: 0.75;
+}
+
+.zg-cards-legend .zg-chip:hover .zg-chip-key,
+.zg-cards-worst:hover .zg-chip-key,
+.zg-is-lit .zg-chip-key { visibility: visible; }
+
+.zg-cards-legend .zg-chip.zg-is-lit,
+.zg-cards-worst.zg-is-lit { box-shadow: 0 0 0 1px currentColor; }
+
+/* Highlighted rings go to full colour. */
+.zg-cards.zg-lit-2 .zg-cell[data-spread="2"] { border-color: var(--ring-two-lit); }
+
+.zg-cards.zg-lit-3 .zg-cell[data-spread="3"] {
+  background-image:
+    linear-gradient(var(--tile-face), var(--tile-face)),
+    repeating-linear-gradient(45deg, var(--ring-three-lit) 0 1.5px, transparent 1.5px 5px),
+    repeating-linear-gradient(-45deg, var(--ring-three-lit) 0 1.5px, transparent 1.5px 5px);
+}
+
+/* The worst pair outlines whole cards. */
+.zg-cards.zg-lit-w .zg-card[data-worst] {
+  border-color: var(--ring-four);
+  box-shadow: 0 0 0 2px var(--ring-four);
+}
