@@ -113,7 +113,7 @@
     <section class="card colophon">
       <h2>Technical Details</h2>
       <p><i> Evaluates the board game Zingo by arranging legal six-card sets on a plane of difficulty versus
-          unfairness, showing where the two retail sets fall short. Points on the interactive SVG chart opens example sets and tests check each result against proven bounds.
+          unfairness, showing where the two retail sets fall short. Points on the interactive SVG chart open example sets and tests check each result against proven bounds.
       </i></p>
       <p>The card set generator works on how many tiles each pair of cards shares. A closed-form bound gives the fairest set possible at each of the 18 difficulty levels, and a constructed board meets that bound in every one, so the lower edge of the plane is exact. A seeded search fills in the rest by swapping tiles between cards without changing difficulty.</p>
       <p>The plane is SVG in TypeScript. Rather than giving 1,713 dots their own targets, it finds the point nearest the pointer, so it works by mouse, touch, or arrow keys. Each sample board is stored in 24 characters, and the test suite re-scores every one against the point it is filed under; GitHub Actions runs the suite on every push.</p>
