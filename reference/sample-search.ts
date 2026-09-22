@@ -1,5 +1,11 @@
 /**
- * Regenerate data/scatter.json (`npm run sample`).
+ * ARTIFACT: the local search that first produced data/scatter.json.
+ *
+ * The chart is now assembled by scripts/build-data.ts from data/exhaustive.json,
+ * which holds enumerated results rather than search results. This file is kept
+ * because the dots for mixes nobody has enumerated yet came from here, and
+ * because `searchFound` in exhaustive.json is the record of what it reached.
+ * Run it with `npm run sample` only to regenerate those from scratch.
  *
  * - `frontier`: the closed-form fairness floor, with a board that reaches it in
  *   every column.
@@ -11,6 +17,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { exactFrontier, possibilitySet } from "../src/lib/generate.js";
 import { parseSheet, score } from "../src/lib/index.js";
+import { mergeExhaustive, patternKey, readExhaustive, withPatterns, writeExhaustive } from "../scripts/exhaustive-data.js";
 
 const SEED = 20260910;
 
@@ -26,16 +33,28 @@ const columns = possibilitySet({
   climb: 250,
 });
 
-const points: [number, number, number, number][] = [];
+const points: number[][] = [];
 const detail: Record<string, [number, string][]> = {};
-const columnMeta: Record<string, { x: number; comps: [number, number, number][] }> = {};
+const columnMeta: Record<string, { x: number; comps: number[][]; exact?: number[] }> = {};
+// What the search alone found, per pattern, recorded before the merge below.
+const searchFound: Record<string, number[]> = {};
 for (const col of columns) {
   columnMeta[col.total] = { x: +col.difficulty.toFixed(4), comps: col.compositions };
   for (const pt of col.points) {
     points.push([+col.difficulty.toFixed(4), +pt.unfairness.toFixed(4), col.total, pt.q]);
     detail[`${col.total}:${pt.q}`] = pt.found.map((f) => [f.composition, f.board]);
+    for (const f of pt.found) {
+      const [, n2, n3] = col.compositions[f.composition];
+      (searchFound[patternKey(n2, n3)] ??= []).push(pt.q);
+    }
   }
 }
+for (const qs of Object.values(searchFound)) qs.sort((a, b) => a - b);
+
+// Fold in the exhaustive results, which also marks proven patterns as exact.
+const exhaustive = withPatterns(readExhaustive(), searchFound);
+const merged = mergeExhaustive({ points, detail, columns: columnMeta }, exhaustive);
+writeExhaustive(exhaustive);
 
 // Score the retail sets from their sheets rather than hard-coding the numbers.
 function retail(name: "red" | "green"): [number, number, number] {
@@ -68,7 +87,8 @@ writeFileSync(new URL("../data/scatter.json", import.meta.url), JSON.stringify(o
 
 const inexact = witnesses.filter((w) => !w.exact);
 console.log(
-  `wrote ${out.points.length} points and ${frontier.length} exact frontier columns\n` +
+  `wrote ${out.points.length} points (${merged.added} from exhaustive.json) and ` +
+    `${frontier.length} exact frontier columns\n` +
     `retail red   x=${zingoRed[0]} y=${zingoRed[1]} worst pair ${zingoRed[2]}
 ` +
     `retail green x=${zingoGreen[0]} y=${zingoGreen[1]} worst pair ${zingoGreen[2]}

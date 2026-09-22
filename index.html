@@ -80,7 +80,7 @@
     <p>A closer look reveals two significant issues:</p>
     <ul>
       <li><strong>The green side is uneven.</strong> Cards 3 and 6 share five images, more than nearly all pairs
-        of red cards, while cards 5 and 6 share only one. In this three-player game, the player with card 6 has a significant advantage.</li>
+        of red cards, while cards 5 and 6 share only one. In a three-player game with cards 3, 5, and 6, the player with card 6 has a significant advantage.</li>
       <li><strong>On the red side, slower players have no chance of winning.</strong> Only three copies of each image exist, yet
         five images (ball, cat, dog, star and sun) each appear on four red cards. In practice, players can be eliminated before any other player wins. In a six-player game, at least two
         of the slowest players can never complete their cards. </li>
@@ -94,7 +94,7 @@
       C(6,2) = 15 pairs of cards.</p>
     <p>The vertical axis measures unfairness as &sigma;, the standard deviation of those 15 counts.</p>
     <p>At lower left, 48 combinations are both less competitive and
-      fairer than the green set. At right, 8 are both more competitive fairer than the red set. </p>
+      fairer than the green set. At right, 8 are both more competitive and fairer than the red set. </p>
     <p class="zg-hint zg-plane-hint">
       Point at a dot to see which mixes of single, double and triple tiles land there. Click to keep the bubble
       open, then pick a mix to see an example six-card set. After clicking the chart, you can also move between
@@ -115,8 +115,8 @@
       <p><i> Evaluates the board game Zingo by arranging legal six-card sets on a plane of difficulty versus
           unfairness, showing where the two retail sets fall short. Points on the interactive SVG chart open example sets and tests check each result against proven bounds.
       </i></p>
-      <p>The card set generator works on how many tiles each pair of cards shares. A closed-form bound gives the fairest set possible at each of the 18 difficulty levels, and a constructed board meets that bound in every one, so the lower edge of the plane is exact. A seeded search fills in the rest by swapping tiles between cards without changing difficulty.</p>
-      <p>The plane is SVG in TypeScript. Rather than giving 1,713 dots their own targets, it finds the point nearest the pointer, so it works by mouse, touch, or arrow keys. Each sample board is stored in 24 characters, and the test suite re-scores every one against the point it is filed under; GitHub Actions runs the suite on every push.</p>
+      <p>The card set generator works on how many tiles each pair of cards shares. A closed-form bound gives the fairest set possible at each of the 18 difficulty levels, and a constructed board meets that bound in every one, so the lower edge of the plane is exact. The rest of the plane is exact too: every card set is one of 37 tile mixes, and each mix has been enumerated in full, so a point missing here is one no legal set can reach.</p>
+      <p>The plane is SVG in TypeScript. Rather than giving 1,728 dots their own targets, it finds the point nearest the pointer, so it works by mouse, touch, or arrow keys. Each sample board is stored in 24 characters, and the test suite re-scores every one against the point it is filed under; GitHub Actions runs the suite on every push.</p>
       <div class="tags">TypeScript · Vitest · SVG · GitHub Actions</div>
       <div class="card__links">
         <a class="btn" href="https://github.com/timteachesmath/zingo">View Source</a>

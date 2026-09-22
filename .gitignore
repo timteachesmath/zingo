@@ -3,5 +3,6 @@ dist/
 *.local
 .DS_Store
 reference/nocommit
+reference/__pycache__
 .vscode/
 # Building inside a Google Drive folder? Keep node_modules out of Drive sync.

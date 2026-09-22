@@ -3,6 +3,7 @@ import { score } from "./lib/fairness.js";
 import { tileSpreads } from "./lib/overlap.js";
 import { oversubscribed } from "./lib/supply.js";
 import { parseSheet, type BoardSet } from "./lib/board.js";
+import { TILES } from "./lib/tiles.js";
 import { renderPlane, enablePointing, type PointInfo, type PlaneApi } from "./plane.js";
 import scatter from "../data/scatter.json";
 // The retail card sheets. The tests and the data generator read the same files.
@@ -65,19 +66,35 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const describeComp = (c: { singles: number; doubles: number; triples: number }) =>
   [plural(c.singles, "single"), plural(c.doubles, "double"), plural(c.triples, "triple")].join(" · ");
 
-type Composition = { singles: number; doubles: number; triples: number; board: string | null };
+type Composition = PointInfo["compositions"][number];
+
+/** 32-bit FNV-1a, used to seed per-board randomness from the board itself. */
+function fnv1a(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
 
 function showTip(info: PointInfo | null, pinned: boolean) {
   if (!info) { tip.hidden = true; return; }
   tip.classList.toggle("zg-is-pinned", pinned);
 
-  const withBoard = info.compositions.filter((c) => c.board).length;
-  const total = info.compositions.length;
+  /* A mix that was enumerated and cannot reach this point is left out entirely.
+     What remains is every mix that reaches it, plus any not yet enumerated. */
+  const mixes = info.compositions.filter((c) => c.board || !c.proven);
+  const total = mixes.length;
 
   tip.innerHTML = "";
   const head = document.createElement("div");
   head.className = "zg-tip-head";
-  head.textContent = `difficulty ${info.x.toFixed(4).replace(/0+$/, "").replace(/\.$/, ".0")} · unfairness ${info.y.toFixed(3)}`;
+  // Each measure stays on one line, so a narrow bubble wraps at the dot.
+  const measure = (text: string) =>
+    Object.assign(document.createElement("span"), { className: "zg-tip-measure", textContent: text });
+  head.append(
+    measure(`difficulty ${info.x.toFixed(4).replace(/0+$/, "").replace(/\.$/, ".0")}`),
+    " · ",
+    measure(`unfairness ${info.y.toFixed(3)}`),
+  );
   const sub = document.createElement("p");
   sub.className = "zg-tip-sub";
   sub.textContent =
@@ -86,7 +103,7 @@ function showTip(info: PointInfo | null, pinned: boolean) {
       : `This point represents ${total} tile mixes.`;
   tip.append(head, sub);
 
-  for (const comp of info.compositions) {
+  for (const comp of mixes) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "zg-tip-comp";
@@ -110,9 +127,8 @@ function showTip(info: PointInfo | null, pinned: boolean) {
     tip.append(cue);
   }
 
-  // The list of mixes is exact, but which ones reach this point is only what the
-  // search found, so don't present a missing one as impossible.
-  if (withBoard < total) {
+  // Only for a mix still listed without a board, i.e. one not yet enumerated.
+  if (mixes.some((c) => !c.board)) {
     const note = document.createElement("p");
     note.className = "zg-tip-note";
     note.textContent = "“none found” means the search did not reach this point that way — not that it is impossible.";
@@ -154,7 +170,7 @@ function showTip(info: PointInfo | null, pinned: boolean) {
 /** Render a witness board as six 3x3 cards, tinted by how many cards share each tile. */
 function showDeck(comp: Composition) {
   if (!comp.board) return;
-  const cards = decodeBoard(comp.board);
+  const cards = relabel(decodeBoard(comp.board), fnv1a(comp.board));
   // Re-score the board rather than copying the dot's values, so the title is
   // an independent check that the board belongs to that dot.
   const s = score(cards);
@@ -163,6 +179,24 @@ function showDeck(comp: Composition) {
     `A set at difficulty ${s.difficulty.toFixed(2)}, unfairness ${s.unfairness.toFixed(3)}`,
     `${describeComp(comp)} · worst pair shares ${s.worstPair}`
   );
+}
+
+/**
+ * Give a generated board's tiles random names. The generator numbers tiles in
+ * the order it placed them (tiles on three cards first), so decoded names track
+ * spread: apple is always on three cards. A permutation seeded from the board
+ * breaks that and keeps each board's names stable. Only which cards share a
+ * tile matters, so scores are unchanged.
+ */
+function relabel(cards: BoardSet, seed: number): BoardSet {
+  const rng = seededRng(seed);
+  const names: string[] = [...TILES];
+  for (let k = names.length - 1; k > 0; k--) {
+    const j = Math.floor(rng() * (k + 1));
+    [names[k], names[j]] = [names[j], names[k]];
+  }
+  const rename = new Map<string, string>(TILES.map((tile, i) => [tile, names[i]]));
+  return cards.map((card) => new Set([...card].map((tile) => rename.get(tile)!)));
 }
 
 /** Which cards sit in a pair sharing the most tiles. Usually two; more if tied. */
@@ -205,14 +239,7 @@ function renderDeck(cards: BoardSet, titleText: string, subtitleText: string, wa
   // Shuffle each card's tiles, or they'd sit in alphabetical order and shared
   // tiles would line up across cards. Seeding from the board (FNV-1a over the
   // tile names) keeps a given set's layout stable between openings.
-  let seed = 2166136261;
-  for (const card of cards)
-    for (const tile of [...card].sort())
-      for (let c = 0; c < tile.length; c++) {
-        seed ^= tile.charCodeAt(c);
-        seed = Math.imul(seed, 16777619);
-      }
-  const rng = seededRng(seed >>> 0);
+  const rng = seededRng(fnv1a(cards.map((card) => [...card].sort().join(",")).join("|")));
 
   const deck = document.createElement("div");
   deck.className = "zg-deck";

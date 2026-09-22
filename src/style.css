@@ -135,6 +135,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+.zg-tip-measure { white-space: nowrap; }
+
+/* Keep the heading clear of the close button, widening the bubble to match. */
+.zg-tip.zg-is-pinned { min-width: 16.5rem; }
+
+.zg-tip.zg-is-pinned .zg-tip-head {
+  padding-right: 1.5rem;
+}
+
 .zg-tip-sub {
   color: var(--muted);
   font-size: 0.78rem;

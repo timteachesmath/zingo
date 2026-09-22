@@ -47,9 +47,13 @@ describe("the shipped possibility set", () => {
     }
   });
 
-  it("is honest about what is proven: floor yes, ceiling no", () => {
+  it("claims the ceiling is proven only when every mix has been enumerated", () => {
     expect(scatter.frontierExact).toBe(true);
-    expect(scatter.ceilingExact).toBe(false);
+    // Every composition in every column enumerated means no dot is merely found.
+    const allEnumerated = Object.values(columns).every(
+      (c) => (c as { comps: number[][]; exact?: number[] }).exact?.length === c.comps.length,
+    );
+    expect(scatter.ceilingExact).toBe(allEnumerated);
   });
 });
 

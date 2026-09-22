@@ -28,17 +28,17 @@ unfairness of 0.40, almost three times fairer, and the page shows you one.
 
 - **No framework.** Strict TypeScript, Vite and hand-built SVG. About 15 KB of
   the 180 KB bundle is code; the rest is the precomputed data.
-- **Nearest-point hit testing.** The chart has 1,713 dots, so instead of giving
+- **Nearest-point hit testing.** The chart has 1,728 dots, so instead of giving
   each one a click target, the pointer selects whichever dot is closest on
   screen. Hover previews it, click pins it, and the arrow keys move between
   dots.
 - **Touch.** On a phone, Chromium moves taps on tiny SVG shapes to the nearest
   element it thinks is clickable. The retail markers are therefore hit-tested
   by coordinate, weighed against the nearest dot so neither hides the other.
-- **Card viewer.** Each dot lists the tile mixes that reach it, and each mix
-  the search found opens an example set, drawn as six cards with the real
-  tile art. Outlines show how many cards share each tile, and hover,
-  click or a hotkey (`2`, `3`, `W`) highlights one kind.
+- **Card viewer.** Each dot lists the tile mixes that reach it, and any of them
+  opens an example set, drawn as six cards with the real tile art. Outlines
+  show how many cards share each tile, and hover, click or a hotkey (`2`, `3`,
+  `W`) highlights one kind.
 - **Shared design system.** Colours, type and components come from a
   stylesheet shared with the rest of
   [timteachesmath.github.io](https://timteachesmath.github.io); this page's own
@@ -46,7 +46,7 @@ unfairness of 0.40, almost three times fairer, and the page shows you one.
 - **Checked in CI.** GitHub Actions runs the type check, the tests and the
   build on every push.
 
-## What is proven, and what is not
+## What is proven
 
 - **Proven.** The fairest possible set at each difficulty has a closed-form
   bound (split the shared images across the 15 pairs as evenly as whole
@@ -54,16 +54,21 @@ unfairness of 0.40, almost three times fairer, and the page shows you one.
   difficulty levels**. Nothing can sit below that line. Difficulty takes only
   those 18 values, and red's value (a total of 53 shared images) is not one of
   them.
-- **Found, not proven.** The rest of the chart, including its upper edge, is
-  whatever the search reached. The data marks this as `ceilingExact: false`,
-  and the page says "none found", never "impossible".
+- **Proven, mix by mix.** Every set belongs to one of 37 tile mixes, and **all
+  37 have now been enumerated exhaustively**. So the chart is a census, not a
+  sample: a gap in it is a point no legal set can reach, and the highest
+  unfairness, σ = 4.41, is a maximum rather than a best effort. The data records
+  this as `ceilingExact: true`.
 
-One tile mix has been checked exhaustively. Three mixes reach green's
-difficulty (2.80); for the one with 6 images on two cards and 12 on three, a
-full enumeration (`reference/zingo.py`) found exactly the 104 unfairness values
-the search had found, and showed that eight other values the arithmetic allows
-are unreachable for that mix. The other two mixes at that difficulty have not
-been enumerated.
+The chart began as a local search, which found 1,713 of the 1,728 points. The
+enumeration added the last 15 and turned the rest from "found" into "proven".
+That search is kept as an artifact in `reference/sample-search.ts`, and what it
+reached is recorded per mix as `searchFound`, which the tests use to check the
+enumeration never claims less than the search already demonstrated.
+
+The enumeration itself is `reference/zingo.py`. `data/exhaustive.json` records
+each mix's values with a board proving every one, and the test suite re-scores
+all of them.
 
 ## Running it
 
@@ -72,7 +77,7 @@ npm install
 npm run dev          # the page
 npm test             # the test suite
 npm run typecheck    # strict type check
-npm run sample       # regenerate data/scatter.json (about two minutes)
+npm run exhaustive   # rebuild data/scatter.json from data/exhaustive.json
 ```
 
 If the folder is in a cloud-synced directory, keep `node_modules` out of the
@@ -81,19 +86,21 @@ sync.
 ## Project layout
 
 - `src/lib/`: the analysis as small pure functions (overlaps and difficulty,
-  fairness, tile supply, sheet parsing, and the frontier and chart searches).
-  The page, the data generator and the tests all use this code, so the chart
-  can't drift from the maths.
+  fairness, tile supply, sheet parsing, and the frontier search). The page, the
+  data scripts and the tests all use this code.
 - `src/`: the page, meaning the chart (`plane.ts`) and the card viewer
   (`main.ts`).
-- `data/`: the two retail card sheets and the generated chart data. See
-  [data/README.md](data/README.md) for the formats.
-- `docs/`: the algorithm specs.
+- `scripts/`: `build-data.ts` turns the enumeration into the chart's data file;
+  `exhaustive-data.ts` reads, writes and merges it.
+- `data/`: the two retail card sheets, the enumeration (`exhaustive.json`), and
+  the chart data built from it. See [data/README.md](data/README.md) for the
+  formats.
+- `docs/`: the algorithm specs and the screenshot above.
 - `tests/`: every derived bound is an assertion. The suite decodes and
   re-scores **every** example set the page can show and checks it lands on
   the dot it belongs to, so a data error fails the build.
-- `reference/`: the original Python analysis the project grew from, and early
-  design mock-ups.
+- `reference/`: the Python enumeration that proves each tile mix, the original
+  local search kept as an artifact, and early design mock-ups.
 
 ## License
 

@@ -9,8 +9,9 @@ export interface Scatter {
    *  a board was actually found for. Typed loosely because that is what a JSON
    *  import infers; `describe()` narrows it. */
   detail: Record<string, (number | string)[][]>;
-  /** Keyed t -> every composition at that difficulty. Exact, unlike `detail`. */
-  columns: Record<string, { x: number; comps: number[][] }>;
+  /** Keyed t -> every composition at that difficulty (exact), and the indices of
+   *  those proven complete by exhaustive enumeration. */
+  columns: Record<string, { x: number; comps: number[][]; exact?: number[] }>;
   /** False: the top barrier and interior are best-found, never proven. */
   ceilingExact: boolean;
   /** The retail sets as [difficulty, unfairness, worstPair], scored from the sheets. */
@@ -28,8 +29,10 @@ export interface PointInfo {
   /** Screen-space position within the SVG's viewBox, for placing a tooltip. */
   vx: number;
   vy: number;
-  /** Every composition at this difficulty, with the witness board if one was found. */
-  compositions: { singles: number; doubles: number; triples: number; board: string | null }[];
+  /** Every composition at this difficulty, with the witness board if one was found.
+   *  `proven` means the composition was enumerated exhaustively, so a missing
+   *  board means no such board exists. */
+  compositions: { singles: number; doubles: number; triples: number; board: string | null; proven: boolean }[];
 }
 
 const NS = "http://www.w3.org/2000/svg";
@@ -143,7 +146,7 @@ export function renderPlane(svg: SVGSVGElement, d: Scatter) {
   // Say how far the data continues above the cut.
   const topY = Math.max(...d.points.map(([, y]) => y));
   el("text", { x: (m.l + (W - m.r)) / 2, y: 58, fill: p.muted, "font-size": 12, "text-anchor": "middle" })
-    .textContent = `Unfairness continues to at least \u03c3 \u2248 ${topY.toFixed(2)} above this view . . .`;
+    .textContent = `Unfairness continues to \u03c3 \u2248 ${topY.toFixed(2)} above this view . . .`;
 
   // Unrotated y-axis label, wrapped to fit in the left margin.
   const lines = ["Unfairness", "\u03c3 = spread of", "shared tiles", "across the cards", "(fair \u2192 lopsided)"];
@@ -209,6 +212,7 @@ function describe(d: Scatter, pt: number[]): PointInfo {
     compositions: column.comps.map((c, i) => ({
       singles: c[0], doubles: c[1], triples: c[2],
       board: found.get(i) ?? null,
+      proven: column.exact?.includes(i) ?? false,
     })),
   };
 }
