@@ -2,9 +2,10 @@
    components come from site.css, which index.html loads first. */
 
 :root {
-  /* Wider column for the chart. Set on the token, not .page, so the header
-     widens to match. */
-  --measure: 1080px;
+  /* The page keeps site.css's 720px reading column (--measure), so the header
+     lines up with the main site and the puzzle solver. Only the chart and the
+     card panel run wider; see "Wide panels" below. */
+  --wide: 1080px;
 
   --plane-bg: var(--surface);
 
@@ -217,6 +218,19 @@ blockquote {
   border-radius: 14px;
   padding: 18px 20px 20px;
   background: var(--surface);
+}
+
+/* ---- Wide panels ------------------------------------------------------ */
+
+/* The chart and the card panel break out of the reading column: up to
+   --wide, or the viewport less its gutters, centred on the column. 100% in a
+   margin is the column's width, so equal negative margins centre the panel.
+   The gutter is wider than half a scrollbar, so 100vw can't overflow. */
+.zg-plane,
+.zg-cards {
+  --panel: min(var(--wide), 100vw - 2 * var(--gutter));
+  width: var(--panel);
+  margin-inline: calc((100% - var(--panel)) / 2);
 }
 
 .zg-cards-head {
