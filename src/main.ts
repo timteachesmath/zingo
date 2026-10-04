@@ -1,6 +1,6 @@
 import { decodeBoard, seededRng } from "./lib/generate.js";
 import { score } from "./lib/fairness.js";
-import { tileSpreads } from "./lib/overlap.js";
+import { tileSpreads, overlapMatrix } from "./lib/overlap.js";
 import { oversubscribed } from "./lib/supply.js";
 import { parseSheet, type BoardSet } from "./lib/board.js";
 import { TILES } from "./lib/tiles.js";
@@ -15,56 +15,135 @@ renderPlane(svg, scatter);
 
 const tip = document.getElementById("tip") as HTMLDivElement;
 const cardBox = document.getElementById("cards") as HTMLDivElement;
+/** The part of the card panel that changes with the set; the note below it doesn't. */
+const deckBox = document.getElementById("deck") as HTMLDivElement;
 
-/* ---- Highlights ---------------------------------------------------------
-   Three highlights (tiles on two cards, tiles on three, the worst pair), each
-   previewed on hover and toggled by click or hotkey. They can be combined. */
+/* ---- Pairs ---------------------------------------------------------------
+   Each card's table lists the tiles it shares with every other card. An entry
+   outlines those shared tiles on both cards: previewed on hover or keyboard
+   focus, kept by click. Any number of pairs can be kept; Clear drops them. */
 
-const stuck = new Set<string>();
+const keptPairs = new Set<string>();
+/** The cards on show, so a pair can find the tiles it shares. */
+let shownCards: BoardSet = [];
 
-function applyLit(preview?: string) {
-  for (const cls of ["zg-lit-2", "zg-lit-3", "zg-lit-w"]) {
-    cardBox.classList.toggle(cls, stuck.has(cls) || preview === cls);
+function applyPair(preview?: string) {
+  const lit = new Set(keptPairs);
+  if (preview) lit.add(preview);
+  // For each card, the tiles it shares with any card it is lit alongside.
+  const outlined = new Map<string, Set<string>>();
+  for (const pair of lit) {
+    const [a, b] = pair.split("-").map(Number);
+    for (const [me, other] of [[a, b], [b, a]]) {
+      const tiles = outlined.get(String(me)) ?? new Set<string>();
+      for (const tile of shownCards[me]) if (shownCards[other].has(tile)) tiles.add(tile);
+      outlined.set(String(me), tiles);
+    }
   }
-  for (const node of cardBox.querySelectorAll<HTMLElement>("[data-lit]")) {
-    node.classList.toggle("zg-is-lit", stuck.has(node.dataset.lit!));
+  for (const card of cardBox.querySelectorAll<HTMLElement>(".zg-card")) {
+    const tiles = outlined.get(card.dataset.card!);
+    card.classList.toggle("zg-is-pair", tiles !== undefined);
+    for (const cell of card.querySelectorAll<HTMLElement>(".zg-cell")) {
+      cell.classList.toggle("zg-is-shared", tiles?.has(cell.dataset.tile!) ?? false);
+    }
   }
+  for (const entry of cardBox.querySelectorAll<HTMLElement>(".zg-share")) {
+    entry.classList.toggle("zg-is-lit", lit.has(entry.dataset.pair!));
+    entry.setAttribute("aria-pressed", String(keptPairs.has(entry.dataset.pair!)));
+  }
+  const clear = cardBox.querySelector<HTMLButtonElement>(".zg-pairs-clear");
+  if (clear) clear.hidden = keptPairs.size === 0;
 }
 
-/** A hoverable, clickable, key-bound label that lights one class of thing. */
-function control(className: string, text: string, key: string, cls: string): HTMLElement {
-  const node = document.createElement("span");
-  node.className = className;
-  node.dataset.lit = cls;
-  node.append(text);
-  const badge = document.createElement("kbd");
-  badge.className = "zg-chip-key";
-  // Leading space so copied or unstyled text reads "shares 6 W", not "shares 6W".
-  badge.textContent = ` ${key.toUpperCase()}`;
-  badge.setAttribute("aria-label", `shortcut key ${key.toUpperCase()}`);
-  node.append(badge);
-  node.addEventListener("mouseenter", () => applyLit(cls));
-  node.addEventListener("mouseleave", () => applyLit());
-  node.addEventListener("click", () => {
-    stuck.has(cls) ? stuck.delete(cls) : stuck.add(cls);
-    applyLit(cls);
+/**
+ * The small table at a card's top right: the other cards' numbers over the
+ * tiles shared with each. The fewest any pair shares gets a subscript
+ * asterisk and the most a superscript one, in every table where they appear.
+ */
+function shareTable(i: number, cards: BoardSet, shared: number[][], fewest: number, most: number): HTMLElement {
+  const table = document.createElement("div");
+  table.className = "zg-shares";
+  table.setAttribute("role", "group");
+  table.setAttribute("aria-label", `Images card ${i + 1} shares with each other card`);
+  // Visual row labels only; each entry's aria-label already says what it is.
+  const head = document.createElement("div");
+  head.className = "zg-share-head";
+  head.setAttribute("aria-hidden", "true");
+  head.append(
+    Object.assign(document.createElement("span"), { textContent: "Card" }),
+    Object.assign(document.createElement("span"), { textContent: "Shared" }),
+  );
+  table.append(head);
+  shared[i].forEach((n, j) => {
+    if (j === i) return;
+    const pair = `${Math.min(i, j)}-${Math.max(i, j)}`;
+    const entry = document.createElement("button");
+    entry.type = "button";
+    entry.className = "zg-share";
+    entry.dataset.pair = pair;
+    if (n === fewest) entry.dataset.fewest = "";
+    if (n === most) entry.dataset.most = "";
+    const fact = [
+      // Naming the images gives a screen reader what the outline shows, and
+      // a touch reader what they can't hover for.
+      `Cards ${Math.min(i, j) + 1} and ${Math.max(i, j) + 1} share ${plural(n, "image")}` +
+        (n ? `: ${[...cards[i]].filter((t) => cards[j].has(t)).sort().join(", ")}.` : "."),
+      // "No pair shares fewer" rather than "the fewest", since ties are common.
+      ...(n === fewest ? ["No pair shares fewer."] : []),
+      ...(n === most ? ["No pair shares more."] : []),
+    ].join(" ");
+    const what = n === 0 ? "the pair" : n === 1 ? "it" : "them";
+    entry.setAttribute("aria-label", fact);
+    // The browser's own tooltip: it waits, and doesn't cover the outlined tiles.
+    entry.title = `${fact} Click to keep ${what} outlined.`;
+    entry.setAttribute("aria-pressed", "false");
+    const card = document.createElement("span");
+    card.className = "zg-share-card";
+    card.textContent = String(j + 1);
+    const count = document.createElement("span");
+    count.className = "zg-share-n";
+    count.textContent = String(n);
+    entry.append(card, count);
+    entry.addEventListener("mouseenter", () => applyPair(pair));
+    entry.addEventListener("mouseleave", () => applyPair());
+    // A mouse click also focuses the button, so only keyboard focus previews.
+    entry.addEventListener("focus", () => { if (entry.matches(":focus-visible")) applyPair(pair); });
+    entry.addEventListener("blur", () => applyPair());
+    entry.addEventListener("click", () => {
+      keptPairs.has(pair) ? keptPairs.delete(pair) : keptPairs.add(pair);
+      applyPair(pair);
+    });
+    table.append(entry);
   });
-  return node;
+  return table;
 }
-
-// The same three keys, toggling the same state the clicks do.
-document.addEventListener("keydown", (e) => {
-  if (cardBox.hidden || e.metaKey || e.ctrlKey || e.altKey) return;
-  const cls = { "2": "zg-lit-2", "3": "zg-lit-3", w: "zg-lit-w" }[e.key.toLowerCase()];
-  if (!cls) return;
-  e.preventDefault();
-  stuck.has(cls) ? stuck.delete(cls) : stuck.add(cls);
-  applyLit();
-});
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-const describeComp = (c: { singles: number; doubles: number; triples: number }) =>
-  [plural(c.singles, "single"), plural(c.doubles, "double"), plural(c.triples, "triple")].join(" · ");
+
+/**
+ * A tile mix as "6 singles · 6 doubles [2] · 12 triples [3]", each count
+ * followed by the badge its tiles carry. Singles carry none. `mix` maps how
+ * many cards a tile is on to how many such tiles there are.
+ */
+function mixLine(mix: Map<number, number>): (Node | string)[] {
+  const words: Record<number, string> = { 1: "single", 2: "double", 3: "triple", 4: "quadruple" };
+  const out: (Node | string)[] = [];
+  [...mix.keys()].sort((a, b) => a - b).forEach((spread, i) => {
+    if (i > 0) out.push(" · ");
+    out.push(plural(mix.get(spread)!, words[spread] ?? `on ${spread}`));
+    if (spread > 1) {
+      const badge = Object.assign(document.createElement("span"), { className: "zg-badge", textContent: String(spread) });
+      badge.dataset.spread = String(spread);
+      // "5 doubles" already says it; read aloud, the badge would add a stray "2".
+      badge.setAttribute("aria-hidden", "true");
+      out.push(" ", badge);
+    }
+  });
+  return out;
+}
+
+const compMix = (c: { singles: number; doubles: number; triples: number }) =>
+  new Map([[1, c.singles], [2, c.doubles], [3, c.triples]]);
 
 type Composition = PointInfo["compositions"][number];
 
@@ -107,15 +186,21 @@ function showTip(info: PointInfo | null, pinned: boolean) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "zg-tip-comp";
-    b.textContent = describeComp(comp);
+    b.append(...mixLine(compMix(comp)));
     if (comp.board && pinned) {
       b.title = "Show a set built this way";
-      b.addEventListener("click", () => showDeck(comp));
+      b.addEventListener("click", (e) => {
+        showDeck(comp);
+        // A click from Enter or Space has no pointer position (detail 0). The
+        // bubble's button is about to be left behind, so take keyboard focus
+        // on to the set it opened.
+        if (e.detail === 0) focusDeckTitle();
+      });
     } else if (comp.board) {
       b.disabled = true;
     } else {
       b.disabled = true;
-      b.textContent += "  — none found";
+      b.append("  — none found");
     }
     tip.append(b);
   }
@@ -124,6 +209,14 @@ function showTip(info: PointInfo | null, pinned: boolean) {
     const cue = document.createElement("p");
     cue.className = "zg-tip-note";
     cue.textContent = "Click the plane to keep this open and pick a mix.";
+    tip.append(cue);
+  } else if (svg.matches(":focus-visible")) {
+    // Pinned from the keyboard: say how to get into the bubble and out again.
+    const cue = document.createElement("p");
+    cue.className = "zg-tip-note";
+    cue.textContent = mixes.some((c) => c.board)
+      ? "Enter: pick a mix · Esc: close"
+      : "Esc: close";
     tip.append(cue);
   }
 
@@ -143,6 +236,8 @@ function showTip(info: PointInfo | null, pinned: boolean) {
     close.textContent = "×";
     close.addEventListener("click", () => {
       (svg as PlaneApi).unpin?.();
+      // The button goes with the bubble, so focus would fall to the page.
+      svg.focus();
     });
     tip.append(close);
   }
@@ -167,7 +262,66 @@ function showTip(info: PointInfo | null, pinned: boolean) {
   tip.style.left = `${Math.min(Math.max(x, half + 6), plane.width - half - 6)}px`;
 }
 
-/** Render a witness board as six 3x3 cards, tinted by how many cards share each tile. */
+/** Drop every kept pair. Focus on the Clear button, which then hides, moves to the set's title. */
+function clearPairs() {
+  const hadFocus = document.activeElement?.classList.contains("zg-pairs-clear");
+  keptPairs.clear();
+  applyPair();
+  if (hadFocus) focusDeckTitle();
+}
+
+/* Esc clears kept pairs, unless a pinned bubble is open: then it closes the
+   bubble, as before, and a second Esc clears. Esc rather than a letter key:
+   a single-character shortcut fails WCAG 2.1.4, firing by accident for
+   speech-input users. This listens in the capture phase so it sees the
+   bubble's state before the plane's own Esc handler closes it. */
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || cardBox.hidden || keptPairs.size === 0) return;
+  if (!tip.hidden && tip.classList.contains("zg-is-pinned")) return;
+  clearPairs();
+}, { capture: true });
+
+/* ---- Keyboard paths into and out of the bubble -------------------------
+   With a dot pinned from the chart, Enter moves focus to the bubble's first
+   mix. In the bubble, Up/Down move between mixes, and Esc or Shift+Tab from
+   the top goes back to the chart. Tab order alone would visit the red and
+   green markers inside the chart first. */
+
+const tipButtons = () =>
+  [...tip.querySelectorAll<HTMLButtonElement>(".zg-tip-comp:not(:disabled), .zg-tip-close")];
+
+svg.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || e.target !== svg) return;
+  if (tip.hidden || !tip.classList.contains("zg-is-pinned")) return;
+  e.preventDefault();
+  tipButtons()[0]?.focus();
+});
+
+tip.addEventListener("keydown", (e) => {
+  const buttons = tipButtons().filter((b) => b.classList.contains("zg-tip-comp"));
+  const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+  if (e.key === "Escape") {
+    // The plane's own Esc handler (on the document) closes the bubble.
+    svg.focus();
+  } else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && at >= 0) {
+    e.preventDefault();
+    buttons[(at + (e.key === "ArrowDown" ? 1 : buttons.length - 1)) % buttons.length].focus();
+  } else if (e.key === "Tab" && e.shiftKey && document.activeElement === tipButtons()[0]) {
+    e.preventDefault();
+    svg.focus();
+  }
+});
+
+/** Move focus to the open set's title, so a keyboard user lands on the cards. */
+function focusDeckTitle() {
+  const title = deckBox.querySelector<HTMLElement>(".zg-cards-title");
+  if (!title) return;
+  title.tabIndex = -1;
+  // The panel already scrolls itself into view.
+  title.focus({ preventScroll: true });
+}
+
+/** Render a witness board as six 3x3 cards, badged by how many cards share each tile. */
 function showDeck(comp: Composition) {
   if (!comp.board) return;
   const cards = relabel(decodeBoard(comp.board), fnv1a(comp.board));
@@ -176,8 +330,7 @@ function showDeck(comp: Composition) {
   const s = score(cards);
   renderDeck(
     cards,
-    `A set at difficulty ${s.difficulty.toFixed(2)}, unfairness ${s.unfairness.toFixed(3)}`,
-    `${describeComp(comp)} · worst pair shares ${s.worstPair}`
+    `A set at difficulty ${s.difficulty.toFixed(2)}, unfairness ${s.unfairness.toFixed(3)}`
   );
 }
 
@@ -199,26 +352,19 @@ function relabel(cards: BoardSet, seed: number): BoardSet {
   return cards.map((card) => new Set([...card].map((tile) => rename.get(tile)!)));
 }
 
-/** Which cards sit in a pair sharing the most tiles. Usually two; more if tied. */
-function worstCards(cards: BoardSet): Set<number> {
-  let most = -1;
-  let winners: number[][] = [];
-  for (let i = 0; i < cards.length; i++)
-    for (let j = i + 1; j < cards.length; j++) {
-      let shared = 0;
-      for (const tile of cards[i]) if (cards[j].has(tile)) shared++;
-      if (shared > most) { most = shared; winners = [[i, j]]; }
-      else if (shared === most) winners.push([i, j]);
-    }
-  return new Set(winners.flat());
-}
-
-/** Render any six-card set, whoever it came from. */
-function renderDeck(cards: BoardSet, titleText: string, subtitleText: string, warning?: string, scroll = true) {
+/**
+ * Render any six-card set, whoever it came from. `source` leads the subtitle
+ * (e.g. "the retail green board"); the tile mix after it is counted here.
+ */
+function renderDeck(cards: BoardSet, titleText: string, source = "", warning?: string, scroll = true) {
   const spreads = tileSpreads(cards);
-  const worst = worstCards(cards);
+  const shared = overlapMatrix(cards);
+  const counts = shared.flatMap((row, i) => row.filter((_, j) => j > i));
+  const fewest = Math.min(...counts), most = Math.max(...counts);
+  shownCards = cards;
+  keptPairs.clear();
 
-  cardBox.innerHTML = "";
+  deckBox.innerHTML = "";
   const head = document.createElement("div");
   head.className = "zg-cards-head";
   const title = document.createElement("div");
@@ -226,14 +372,23 @@ function renderDeck(cards: BoardSet, titleText: string, subtitleText: string, wa
   title.textContent = titleText;
   const subtitle = document.createElement("div");
   subtitle.className = "zg-cards-sub";
-  // "worst pair shares N" gets its own control because it highlights whole
-  // cards, not a kind of tile.
-  const [before, sharesN] = subtitleText.split(" · worst pair shares ");
-  subtitle.append(before);
-  if (sharesN !== undefined) {
-    subtitle.append(" · ");
-    subtitle.append(control("zg-cards-worst", `worst pair shares ${sharesN}`, "w", "zg-lit-w"));
-  }
+  // Singles, doubles and triples always show, even at zero, to match the mixes
+  // the bubble lists. Quadruples show only on retail red.
+  const mix = new Map<number, number>([[1, 0], [2, 0], [3, 0]]);
+  for (const spread of spreads.values()) mix.set(spread, (mix.get(spread) ?? 0) + 1);
+  if (source) subtitle.append(source, " · ");
+  subtitle.append(...mixLine(mix));
+  const clear = document.createElement("button");
+  clear.type = "button";
+  clear.className = "zg-pairs-clear";
+  clear.hidden = true;
+  clear.textContent = "Clear";
+  // The shortcut shows in the hover tooltip; screen readers get it from
+  // aria-keyshortcuts.
+  clear.title = "Clear outlined pairs (Esc)";
+  clear.setAttribute("aria-keyshortcuts", "Escape");
+  clear.addEventListener("click", clearPairs);
+  subtitle.append(clear);
   head.append(title, subtitle);
 
   // Shuffle each card's tiles, or they'd sit in alphabetical order and shared
@@ -246,10 +401,13 @@ function renderDeck(cards: BoardSet, titleText: string, subtitleText: string, wa
   cards.forEach((card, i) => {
     const el = document.createElement("div");
     el.className = "zg-card";
-    if (worst.has(i)) el.dataset.worst = "";
+    el.dataset.card = String(i);
     const label = document.createElement("div");
     label.className = "zg-card-label";
-    label.textContent = `card ${i + 1}`;
+    const name = document.createElement("span");
+    name.className = "zg-card-name";
+    name.textContent = `card ${i + 1}`;
+    label.append(name, shareTable(i, cards, shared, fewest, most));
     const grid = document.createElement("div");
     grid.className = "zg-card-grid";
     const laid = [...card];
@@ -260,7 +418,8 @@ function renderDeck(cards: BoardSet, titleText: string, subtitleText: string, wa
     for (const tile of laid) {
       const cell = document.createElement("div");
       cell.className = "zg-cell";
-      cell.dataset.spread = String(spreads.get(tile) ?? 1);
+      cell.dataset.tile = tile;
+      const spread = spreads.get(tile) ?? 1;
       const art = document.createElement("img");
       art.className = "zg-cell-art";
       art.src = `${import.meta.env.BASE_URL}tiles-dark/${tile}.svg`;
@@ -272,37 +431,32 @@ function renderDeck(cards: BoardSet, titleText: string, subtitleText: string, wa
       name.className = "zg-cell-name";
       name.textContent = tile;
       cell.append(art, name);
+      // A corner badge counts the cards carrying a tile, when it is more than one.
+      if (spread > 1) {
+        const badge = document.createElement("span");
+        badge.className = "zg-badge";
+        badge.dataset.spread = String(spread);
+        badge.title = `on ${spread} cards`;
+        // A bare digit after the name reads as "cat 4". Screen readers get
+        // "cat, on 4 cards" instead; a `title` alone isn't reliably read.
+        const digit = Object.assign(document.createElement("span"), { textContent: String(spread) });
+        digit.setAttribute("aria-hidden", "true");
+        const spoken = Object.assign(document.createElement("span"), { className: "zg-sr", textContent: `, on ${spread} cards` });
+        badge.append(digit, spoken);
+        cell.append(badge);
+      }
       grid.append(cell);
     }
     el.append(label, grid);
     deck.append(el);
   });
 
-  // Only list the spreads this board uses. "On four" appears only for retail red.
-  const present = [...new Set(spreads.values())].sort((a, b) => a - b);
-  const label: Record<number, string> = {
-    1: "on one card", 2: "on two", 3: "on three", 4: "on four",
-  };
-  const legend = document.createElement("p");
-  legend.className = "zg-cards-legend";
-  legend.append("Outlines show how many cards carry a tile: ");
-  present.forEach((spread, i) => {
-    const text = label[spread] ?? `on ${spread}`;
-    // Only the dimmed rings (two and three) can be highlighted.
-    const chip = spread === 2 || spread === 3
-      ? control("zg-cell zg-chip", text, String(spread), `zg-lit-${spread}`)
-      : Object.assign(document.createElement("span"), { className: "zg-cell zg-chip", textContent: text });
-    chip.dataset.spread = String(spread);
-    legend.append(chip, i < present.length - 1 ? " " : ". ");
-  });
-  legend.append("That mix is what fixes the difficulty.");
-
-  cardBox.append(head, deck, legend);
+  deckBox.append(head, deck);
   if (warning) {
     const note = document.createElement("p");
     note.className = "zg-cards-warning";
     note.textContent = warning;
-    cardBox.append(note);
+    deckBox.append(note);
   }
   cardBox.hidden = false;
   // "nearest" scrolls as little as possible, so a pinned bubble may stay in view.
@@ -331,7 +485,7 @@ function showRetail(name: "red" | "green", { initial = false } = {}) {
   renderDeck(
     cards,
     `Zingo ${name} — difficulty ${s.difficulty.toFixed(4)}, unfairness ${s.unfairness.toFixed(4)}`,
-    `the retail ${name} board · worst pair shares ${s.worstPair}`,
+    `the retail ${name} board`,
     warning,
     !initial
   );

@@ -40,7 +40,9 @@ const NS = "http://www.w3.org/2000/svg";
 const W = 1040, H = 620, m = { t: 96, r: 40, b: 64, l: 168 };
 // The y-axis stops at 2.9, where most of the data is. A note above the plot
 // gives the highest value found.
-const xd = [2.35, 3.66], yd = [0, 2.9];
+// The x-domain leaves the same 0.06 of room before the first column (2.4) as
+// after the last (3.6), so neither column sits on the edge of the plot.
+const xd = [2.34, 3.66], yd = [0, 2.9];
 const px = (x: number) => m.l + ((x - xd[0]) / (xd[1] - xd[0])) * (W - m.l - m.r);
 const py = (y: number) => H - m.b - ((y - yd[0]) / (yd[1] - yd[0])) * (H - m.t - m.b);
 const lerp = (a: number, b: number, t: number) => Math.round(a + (b - a) * t);
@@ -107,16 +109,26 @@ export function renderPlane(svg: SVGSVGElement, d: Scatter) {
   markers.length = 0;
   const p = palette();
   // Both axes carry the symbol their ticks measure: x is the mean of the 15
-  // pairwise overlaps, y their standard deviation.
-  for (let y = 0; y <= 2; y += 1) {
-    el("line", { x1: m.l, x2: W - m.r, y1: py(y), y2: py(y), stroke: "rgba(255,255,255,.075)" });
-    el("text", { x: m.l - 10, y: py(y) + 4, fill: p.muted, "font-size": 12, "text-anchor": "end" })
-      .textContent = y === 2 ? `\u03c3 = ${y.toFixed(1)}` : y.toFixed(1);
+  // pairwise overlaps, y their standard deviation. Labels hang off short
+  // ticks outside the axes; there are no gridlines across the dots.
+  const axis = "rgba(255,255,255,.18)";
+  const TICK = 5;
+  // Integer steps so the 0.5 and 0.2 increments don't accumulate float error.
+  for (let k = 0; k <= 5; k++) {
+    const y = k / 2;
+    el("line", { x1: m.l - TICK, x2: m.l, y1: py(y), y2: py(y), stroke: axis });
+    el("text", { x: m.l - TICK - 5, y: py(y) + 4, fill: p.muted, "font-size": 12, "text-anchor": "end" })
+      .textContent = k === 5 ? `σ = ${y.toFixed(1)}` : y.toFixed(1);
   }
-  ([[2.4, "2.40"], [2.8, "2.80"], [3.0, "3.00"], [3.375, "3.375"], [3.6, "3.60"]] as [number, string][]).forEach(
-    ([x, l]) => (el("text", { x: px(x), y: H - m.b + 20, fill: p.muted, "font-size": 12, "text-anchor": "middle" })
-      .textContent = x === 2.4 ? `\u03bc = ${l}` : l)
-  );
+  for (let k = 12; k <= 18; k++) {
+    const x = k / 5;
+    el("line", { x1: px(x), x2: px(x), y1: py(0), y2: py(0) + TICK, stroke: axis });
+    el("text", { x: px(x), y: H - m.b + 20, fill: p.muted, "font-size": 12, "text-anchor": "middle" })
+      .textContent = k === 12 ? `μ = ${x.toFixed(1)}` : x.toFixed(1);
+  }
+  // The two axis lines, drawn under the dots and meeting at the plot's corner.
+  el("line", { x1: m.l, x2: W - m.r, y1: py(0), y2: py(0), stroke: axis });
+  el("line", { x1: m.l, x2: m.l, y1: py(0), y2: m.t, stroke: axis });
 
   // Clip dots to the plot area. The data runs well past the top of the axis
   // and would otherwise draw over the title.
@@ -125,23 +137,23 @@ export function renderPlane(svg: SVGSVGElement, d: Scatter) {
   const g = el("g", { "clip-path": "url(#plot)" });
   d.points.forEach(([x, y]) => el("circle", { cx: px(x), cy: py(y), r: 2.1, fill: tier(x), "fill-opacity": 0.5 }, g));
 
-  // The difficulty no legal set reaches (t = 53), hatched in the orange the
-  // card viewer uses for a tile on four cards, which is what red needs to sit here.
+  // The difficulty no legal set reaches (t = 53). Red needs tiles on four cards
+  // to sit here.
   const tx0 = px(d.guides.tooth);
-  const ringFour = token("--ring-four", "#f97316");
+  const gapBlue = token("--blue-mid", "#60a5fa");
   const defs = el("defs", {});
   const pat = el("pattern", { id: "hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
-  el("line", { x1: 0, y1: 0, x2: 0, y2: 6, stroke: ringFour, "stroke-opacity": 0.55, "stroke-width": 2 }, pat);
+  el("line", { x1: 0, y1: 0, x2: 0, y2: 6, stroke: gapBlue, "stroke-opacity": 0.55, "stroke-width": 2 }, pat);
   el("rect", { x: tx0 - 9, y: m.t, width: 18, height: H - m.t - m.b, fill: "url(#hatch)" });
 
   // Legend swatch for the hatched stripe.
   const ly = H - m.b + 38;
-  el("rect", { x: tx0 - 78, y: ly - 10, width: 13, height: 13, fill: "url(#hatch)", stroke: ringFour, "stroke-opacity": 0.6 });
-  el("text", { x: tx0 - 60, y: ly, fill: ringFour, "font-size": 11, "text-anchor": "start", "font-style": "italic" })
+  el("rect", { x: tx0 - 78, y: ly - 10, width: 13, height: 13, fill: "url(#hatch)", stroke: gapBlue, "stroke-opacity": 0.6 });
+  el("text", { x: tx0 - 60, y: ly, fill: gapBlue, "font-size": 11, "text-anchor": "start", "font-style": "italic" })
     .textContent = "no legal set exists here";
 
   el("text", { x: (m.l + (W - m.r)) / 2, y: 32, fill: p.text, "font-size": 17, "text-anchor": "middle", "font-weight": 700 })
-    .textContent = "Competitiveness / Fairness Distribution";
+    .textContent = "Evaluation of Zingo Card Sets";
 
   // Say how far the data continues above the cut.
   const topY = Math.max(...d.points.map(([, y]) => y));
@@ -149,7 +161,7 @@ export function renderPlane(svg: SVGSVGElement, d: Scatter) {
     .textContent = `Unfairness continues to \u03c3 \u2248 ${topY.toFixed(2)} above this view . . .`;
 
   // Unrotated y-axis label, wrapped to fit in the left margin.
-  const lines = ["Unfairness", "\u03c3 = spread of", "shared tiles", "across the cards", "(fair \u2192 lopsided)"];
+  const lines = ["Unfairness", "\u03c3 = spread of", "shared tiles", "between card pairs", "(fair \u2192 lopsided)"];
   const yLabel = el("text", { fill: p.textSoft, "font-size": 12, "text-anchor": "start" });
   const top = (m.t + (H - m.b)) / 2 - ((lines.length - 1) * 15) / 2;
   lines.forEach((line, i) => {
@@ -160,9 +172,36 @@ export function renderPlane(svg: SVGSVGElement, d: Scatter) {
     yLabel.appendChild(ts);
   });
   el("text", { x: (m.l + (W - m.r)) / 2, y: H - 6, fill: p.textSoft, "font-size": 13, "text-anchor": "middle" })
-    .textContent = "Difficulty  \u00b7  \u03bc = mean tiles shared per pair   (luck \u2192 skill)";
-  marker("red", d.zingo_red[0], d.zingo_red[1], true, "Zingo red", "in the impossible gap");
-  marker("green", d.zingo_green[0], d.zingo_green[1], false, "Zingo green", "legal, yet no fairer than red");
+    .textContent = "Difficulty \u03bc = average tiles shared per pair   (luck \u2192 skill)";
+  betterThan(d, "green", -1, ["easier and fairer"]);
+  betterThan(d, "red", 1, ["harder", "and fairer"]);
+  marker("red", d.zingo_red[0], d.zingo_red[1], "Zingo red", "Repeats an image more than 3 times");
+  marker("green", d.zingo_green[0], d.zingo_green[1], "Zingo green", "Not uniformly less competitive than red");
+}
+
+/**
+ * Dashed lines from a retail marker down to the x-axis and across to the edge
+ * of the plot on `side` (-1 left, 1 right), boxing in the sets that beat it:
+ * strictly fairer, and strictly easier (left) or harder (right). The count
+ * goes in the box's top corner beside the marker.
+ */
+function betterThan(d: Scatter, name: "red" | "green", side: -1 | 1, caption: string[]) {
+  const p = palette();
+  const [x, y] = name === "red" ? d.zingo_red : d.zingo_green;
+  const n = d.points.filter(([px0, py0]) => py0 < y && (px0 - x) * side > 0).length;
+  const cx = px(x), cy = py(y);
+  const g = el("g", { "pointer-events": "none", stroke: p.warn, "stroke-opacity": 0.6, "stroke-width": 1.2, "stroke-dasharray": "5 4" });
+  el("line", { x1: cx, y1: cy, x2: cx, y2: H - m.b }, g);
+  el("line", { x1: cx, y1: cy, x2: side < 0 ? m.l : W - m.r, y2: cy }, g);
+  const anchor = side < 0 ? "end" : "start";
+  const text = el("text", { fill: p.warn, "font-size": 11, "text-anchor": anchor, "pointer-events": "none" });
+  [`${n} ${caption[0]}`, ...caption.slice(1)].forEach((line, i) => {
+    const ts = document.createElementNS(NS, "tspan");
+    ts.setAttribute("x", String(cx + side * 6));
+    ts.setAttribute("y", String(cy + 16 + i * 13));
+    ts.textContent = line;
+    text.appendChild(ts);
+  });
 }
 
 /**
@@ -170,7 +209,7 @@ export function renderPlane(svg: SVGSVGElement, d: Scatter) {
  * so the page can treat it as a button; these are the only two points with a
  * real card list behind them.
  */
-function marker(name: string, x: number, y: number, filled: boolean, label: string, sub: string) {
+function marker(name: string, x: number, y: number, label: string, sub: string) {
   const p = palette();
   const cx = px(x), cy = py(y);
   const g = el("g", {}) as SVGGElement;
@@ -182,7 +221,7 @@ function marker(name: string, x: number, y: number, filled: boolean, label: stri
   // The drawn shapes ignore the pointer: dots sit under the green marker, and a
   // clickable ring would take their clicks. enablePointing() hit-tests markers
   // by coordinate instead. The label text stays clickable.
-  el("circle", { cx, cy, r: 8, fill: filled ? p.warn : "none", stroke: p.warn, "stroke-width": 3, "fill-opacity": filled ? 0.9 : 1, "stroke-dasharray": filled ? "" : "3 3", "pointer-events": "none" }, g);
+  el("circle", { cx, cy, r: 8, fill: p.warn, stroke: p.warn, "stroke-width": 3, "fill-opacity": 0.9, "pointer-events": "none" }, g);
   el("circle", { cx, cy, r: 2.4, fill: p.warn, "pointer-events": "none" }, g);
   const lx = x > 3.2 ? cx - 14 : cx + 14, anch = x > 3.2 ? "end" : "start";
   el("line", { x1: cx, y1: cy, x2: lx, y2: cy - 26, stroke: p.warn, "stroke-width": 1.2, "pointer-events": "none" }, g);

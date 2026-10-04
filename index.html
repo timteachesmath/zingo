@@ -19,14 +19,15 @@
     </header>
 
     <h2>Game Description</h2>
-    <p>The children's game Zingo by ThinkFun borrows from two other popular games.</p>
+    <p>The children's game Zingo by ThinkFun is clearly inspired by two other popular games.</p>
     <h3>Bingo</h3>
     <ul>
+      <li>The bingo hopper begins with 75 numbered balls.</li>
       <li>Each card has 25 spaces: 24 numbers and a free center space. Each of the 5 columns draws from its own
         range of 15 numbers.</li>
       <li>That allows 552 septillion different cards: P(15,5)<sup>4</sup> &times; P(15,4).</li>
       <li>Numbers are called one at a time, and every player holding a called number marks it. The first player to
-        complete a pattern, usually a line of five, wins.</li>
+        complete a pattern, for example a line of five, wins.</li>
     </ul>
     <h3>Spot It</h3>
     <ul>
@@ -35,10 +36,9 @@
     </ul>
     <h3>Zingo</h3>
     <ul>
-      <li>72 tiles carry 24 images, three copies of each.</li>
+      <li>A set of 24 images populates 72 tiles: three copies of each.</li>
       <li>Each card shows 9 different images, which allows C(24,9) = 1,307,504 possible cards.</li>
-      <li>The game comes with six double-sided cards: a green set on one side and a red set on the other. Across
-        all pairs of cards, green shares 42 images and red shares 53.</li>
+      <li>The game comes with six double-sided cards: a green set on one side and a red set on the other.</li>
       <li>Tiles are dealt two at a time, and each tile goes to the first player who claims it.</li>
     </ul>
 
@@ -46,9 +46,9 @@
     <p>Because only one player can claim each tile, Zingo is not the game of luck that bingo is. However, the provided card sets undermine rewarding players' speed.</p>
     <p>The 2019 edition explains its two sides this way:</p>
     <blockquote>
-      <p>&ldquo;Green side: This side is LESS competitive as cards have fewer images in common. This level is better
+      <p>Green side: This side is LESS competitive as cards have fewer images in common. This level is better
         for younger players. Red Side: This side is MORE competitive. Red Cards share more images, so players must
-        act faster to claim the tiles. This level is better for older and more advanced players.&rdquo;</p>
+        act faster to claim the tiles. This level is better for older and more advanced players.</p>
     </blockquote>
     <!-- WebP with JPEG fallback. Width and height are set to avoid layout shift. -->
     <div class="zg-photos">
@@ -58,7 +58,7 @@
           <img src="photos/cards-green.jpg" width="1500" height="1226" loading="lazy" decoding="async"
             alt="The six green Zingo cards laid out in two rows, each a 3 by 3 grid of named pictures." />
         </picture>
-        <figcaption>The green set — the &ldquo;easy&rdquo; side.</figcaption>
+        <figcaption>The green set, intended to be less competitive</figcaption>
       </figure>
       <figure>
         <picture>
@@ -66,54 +66,79 @@
           <img src="photos/cards-red.jpg" width="1500" height="1265" loading="lazy" decoding="async"
             alt="The six red Zingo cards laid out in two rows, each a 3 by 3 grid of named pictures." />
         </picture>
-        <figcaption>The red set — the other side of the same six cards.</figcaption>
+        <figcaption>The red set, intended to be more competitive</figcaption>
       </figure>
       <figure>
         <picture>
           <source srcset="photos/tiles.webp" type="image/webp" />
           <img src="photos/tiles.jpg" width="1500" height="844" loading="lazy" decoding="async"
-            alt="The Zingo tiles: twenty-four pictures, three copies of each, seventy-two tiles in total." />
+            alt="The Zingo tiles: twenty-four images, three copies of each, populate seventy-two tiles." />
         </picture>
-        <figcaption>The tiles — 24 pictures, three copies each.</figcaption>
+        <figcaption>The tiles — 24 images, three copies each</figcaption>
       </figure>
     </div>
     <p>A closer look reveals two significant issues:</p>
     <ul>
       <li><strong>The green side is uneven.</strong> Cards 3 and 6 share five images, more than nearly all pairs
-        of red cards, while cards 5 and 6 share only one. In a three-player game with cards 3, 5, and 6, the player with card 6 has a significant advantage.</li>
+        of red cards, while cards 5 and 6 share only one. A player with card 5 has a significant advantage in a three-player game with cards 3, 5, and 6.</li>
       <li><strong>On the red side, slower players have no chance of winning.</strong> Only three copies of each image exist, yet
-        five images (ball, cat, dog, star and sun) each appear on four red cards. In practice, players can be eliminated before any other player wins. In a six-player game, at least two
+        five images (ball, cat, dog, star, and sun) each appear on four red cards. In practice, players can be eliminated before any other player wins. In a six-player game, at least two
         of the slowest players can never complete their cards. </li>
     </ul>
+    <p> We can solve the latter problem by limiting a set of cards to at most three copies of each image, and we can reduce the severity of the former by distributing those duplicates more evenly.</p>
 
     <h2>Better Choices Are Available</h2>
-    <p>The graph below arranges possible card sets that use each picture at most three times, consistent with the 72-tile set. Each is placed according to two measures: how competitive it is and how unfair it is.
-      Fairness matters less in a set that isn't very competitive, because its cards share fewer images to fight
+    <p>The graph below arranges possible card sets that use each image at most three times, consistent with the 72-tile set. Each is placed according to two measures: how competitive it is and how unfair it is.
+      Fairness matters more in a set that is competitive, because its cards share more duplicated images to fight
       over.</p>
     <p>The horizontal axis measures competitiveness as &mu;, the mean number of images shared by each of the
       C(6,2) = 15 pairs of cards.</p>
     <p>The vertical axis measures unfairness as &sigma;, the standard deviation of those 15 counts.</p>
-    <p>At lower left, 48 combinations are both less competitive and
+    <p>At lower left, 48 dots are both less competitive and
       fairer than the green set. At right, 8 are both more competitive and fairer than the red set. </p>
-    <p class="zg-hint zg-plane-hint">
-      Point at a dot to see which mixes of single, double and triple tiles land there. Click to keep the bubble
-      open, then pick a mix to see an example six-card set. After clicking the chart, you can also move between
-      dots with the arrow keys.
-    </p>
-
     <div class="zg-plane">
       <svg id="plane" viewBox="0 0 1040 620" role="img"
         aria-label="Every reachable card set, arranged by difficulty and unfairness. Point at a dot, or focus the plane and use the arrow keys, to see which kinds of sets land there."></svg>
-      <div id="tip" class="zg-tip" hidden></div>
+      <!-- Polite live region, so a screen reader reads each dot as the arrow keys reach it. -->
+      <div id="tip" class="zg-tip" aria-live="polite" hidden></div>
+      <!-- Same style and sentence pattern as the note under the cards. -->
+      <details class="zg-note">
+        <summary>How to read the chart</summary>
+        <p>
+          Each dot shows which mixes of single, double and triple images exhibit that level of difficulty and unfairness. Click a dot to keep the bubble open and pick a mix to see an example six-card set. After clicking or tabbing to the chart,
+          the arrow keys move between dots, Enter moves into the bubble, and Esc closes it.
+        </p>
+      </details>
     </div>
-    <div id="cards" class="zg-cards" hidden></div>
+    <div id="cards" class="zg-cards" hidden>
+      <!-- main.ts renders the open set here. -->
+      <div id="deck"></div>
+      <!-- Same style and sentence pattern as the note under the chart. -->
+      <details class="zg-note">
+        <summary>How to read the cards</summary>
+        <p>
+          On an image, a corner badge shows how many cards contain the image:
+          <span class="zg-badge" data-spread="2" aria-hidden="true">2</span> two,
+          <span class="zg-badge" data-spread="3" aria-hidden="true">3</span> three, or, in the Zingo red set,
+          <span class="zg-badge" data-spread="4" aria-hidden="true">4</span> four. No badge means the image is unique to the card.
+        </p>
+        <p>
+          On a card, the table at top right counts the images shared with each other card. A low asterisk
+          marks the fewest any pair shares, and a high one the most.
+        </p>
+        <p>
+          Point at a column in a table to outline those images, or click it to keep them outlined. With the keyboard, Tab to
+          a number and press Enter or Space to keep the images outlined; Esc clears those kept outlines.
+        </p>
+      </details>
+    </div>
 
     <!-- Same shape as the colophon on the puzzle solver page: a one-line summary,
          how the data is made, how the page is built, tags, and the source. -->
     <section class="card colophon">
       <h2>Technical Details</h2>
       <p><i> Evaluates the board game Zingo by arranging legal six-card sets on a plane of difficulty versus
-          unfairness, showing where the two retail sets fall short. Points on the interactive SVG chart open example sets and tests check each result against proven bounds.
+          unfairness, showing where the two retail sets fall short. Points on the interactive SVG chart open example sets, and tests check each result against proven bounds.
       </i></p>
       <p>The card set generator works on how many tiles each pair of cards shares. A closed-form bound gives the fairest set possible at each of the 18 difficulty levels, and a constructed board meets that bound in every one, so the lower edge of the plane is exact. The rest of the plane is exact too: every card set is one of 37 tile mixes, and each mix has been enumerated in full, so a point missing here is one no legal set can reach.</p>
       <p>The plane is SVG in TypeScript. Rather than giving 1,728 dots their own targets, it finds the point nearest the pointer, so it works by mouse, touch, or arrow keys. Each sample board is stored in 24 characters, and the test suite re-scores every one against the point it is filed under; GitHub Actions runs the suite on every push.</p>
