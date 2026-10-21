@@ -17,9 +17,10 @@
     <header>
       <h1>Evaluating Zingo Fairness</h1>
     </header>
+    <p class="lede">Zingo's card sets each have a flaw. <a href="#chart">The chart below</a> illustrates better alternatives.</p>
 
     <h2>Game Description</h2>
-    <p>The children's game Zingo by ThinkFun is clearly inspired by two other popular games.</p>
+    <p>The children's game Zingo by ThinkFun draws inspiration from two other popular games.</p>
     <h3>Bingo</h3>
     <ul>
       <li>The bingo hopper begins with 75 numbered balls.</li>
@@ -39,12 +40,12 @@
       <li>A set of 24 images populates 72 tiles: three copies of each.</li>
       <li>Each card shows 9 different images, which allows C(24,9) = 1,307,504 possible cards.</li>
       <li>The game comes with six double-sided cards: a green set on one side and a red set on the other.</li>
-      <li>Tiles are dealt two at a time, and each tile goes to the first player who claims it.</li>
+      <li>Tiles are revealed two at a time, and each tile goes to the first player who claims it. Players compete to fill their card.</li>
     </ul>
 
     <h2>Game Evaluation</h2>
-    <p>Because only one player can claim each tile, Zingo is not the game of luck that bingo is. However, the provided card sets undermine rewarding players' speed.</p>
-    <p>The 2019 edition explains its two sides this way:</p>
+    <p>Because only one player can claim each tile, Zingo is not the game of luck that bingo is. Instead, it should reward a player's speed, but the provided card sets undermine that objective.</p>
+    <p>The 2019 edition explains the two sides of each card this way:</p>
     <blockquote>
       <p>Green side: This side is LESS competitive as cards have fewer images in common. This level is better
         for younger players. Red Side: This side is MORE competitive. Red Cards share more images, so players must
@@ -82,12 +83,11 @@
       <li><strong>The green side is uneven.</strong> Cards 3 and 6 share five images, more than nearly all pairs
         of red cards, while cards 5 and 6 share only one. A player with card 5 has a significant advantage in a three-player game with cards 3, 5, and 6.</li>
       <li><strong>On the red side, slower players have no chance of winning.</strong> Only three copies of each image exist, yet
-        five images (ball, cat, dog, star, and sun) each appear on four red cards. In practice, players can be eliminated before any other player wins. In a six-player game, at least two
-        of the slowest players can never complete their cards. </li>
+        five images (ball, cat, dog, star, and sun) each appear on four red cards. This means in a six-player game, the slowest two or more players cannot complete their cards no matter the draw, and several players could see they've been eliminated before any other player wins. </li>
     </ul>
-    <p> We can solve the latter problem by limiting a set of cards to at most three copies of each image, and we can reduce the severity of the former by distributing those duplicates more evenly.</p>
+    <p> The severity of the former can be reduced by distributing those duplicates more evenly, and the latter problem can be eliminated by limiting a set of cards to at most three copies of each image.</p>
 
-    <h2>Better Choices Are Available</h2>
+    <h2 id="chart">Better Choices Are Available</h2>
     <p>The graph below arranges possible card sets that use each image at most three times, consistent with the 72-tile set. Each is placed according to two measures: how competitive it is and how unfair it is.
       Fairness matters more in a set that is competitive, because its cards share more duplicated images to fight
       over.</p>
@@ -140,7 +140,7 @@
       <p><i> Evaluates the board game Zingo by arranging legal six-card sets on a plane of difficulty versus
           unfairness, showing where the two retail sets fall short. Points on the interactive SVG chart open example sets, and tests check each result against proven bounds.
       </i></p>
-      <p>The card set generator works on how many tiles each pair of cards shares. A closed-form bound gives the fairest set possible at each of the 18 difficulty levels, and a constructed board meets that bound in every one, so the lower edge of the plane is exact. The rest of the plane is exact too: every card set is one of 37 tile mixes, and each mix has been enumerated in full, so a point missing here is one no legal set can reach.</p>
+      <p>A set's place on the chart depends only on how many tiles each pair of cards shares. Every legal set has been enumerated, so the chart shows every place a legal set can reach.</p>
       <p>The plane is SVG in TypeScript. Rather than giving 1,728 dots their own targets, it finds the point nearest the pointer, so it works by mouse, touch, or arrow keys. Each sample board is stored in 24 characters, and the test suite re-scores every one against the point it is filed under; GitHub Actions runs the suite on every push.</p>
       <div class="tags">TypeScript · Vitest · SVG · GitHub Actions</div>
       <div class="card__links">

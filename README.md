@@ -36,9 +36,12 @@ unfairness of 0.40, almost three times fairer, and the page shows you one.
   element it thinks is clickable. The retail markers are therefore hit-tested
   by coordinate, weighed against the nearest dot so neither hides the other.
 - **Card viewer.** Each dot lists the tile mixes that reach it, and any of them
-  opens an example set, drawn as six cards with the real tile art. Outlines
-  show how many cards share each tile, and hover, click or a hotkey (`2`, `3`,
-  `W`) highlights one kind.
+  opens an example set, drawn as six cards with the real tile art. A corner
+  badge marks each image on 2, 3 or 4 cards, and the set's subtitle and the
+  dot's bubble list the mix with the same badges. Each card carries a small
+  table of the images it shares with every other card, with asterisks on the
+  fewest and the most. Hovering an entry outlines those images on both cards;
+  clicking keeps them outlined, and Esc or Clear drops them.
 - **Shared design system.** Colours, type and components come from a
   stylesheet shared with the rest of
   [timteachesmath.github.io](https://timteachesmath.github.io); this page's own

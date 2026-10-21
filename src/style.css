@@ -35,6 +35,9 @@
   font-size: 1.16rem;
 }
 
+/* Underline so color isn't the only signifier of hyperlinks */
+.lede a { text-decoration: underline; }
+
 /* Quoted material is set in italic instead of quotation marks. */
 blockquote {
   font-style: italic;
